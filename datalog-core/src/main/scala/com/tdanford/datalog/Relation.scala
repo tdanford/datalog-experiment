@@ -21,17 +21,36 @@ import scala.io.Source
 
 trait Relation {
   def name : String
-  def scan() : Iterable[Predicate]
+  def scan() : Iterator[Predicate]
+}
+
+object PredicateConditions {
+
+  def predicateSubset( predicate : Predicate, indices : Int* ) : Seq[Atom] =
+    predicate.tuple.zipWithIndex.filter {
+      case (a : Atom, i : Int) => indices.contains(i)
+    }.map(_._1)
+
+  def pointEquality( indices : Int* ) : (Predicate,Predicate)=>Boolean =
+    (p1, p2) => {
+      val s1: Seq[Atom] = predicateSubset(p1, indices : _*)
+      val s2: Seq[Atom] = predicateSubset(p2, indices : _*)
+      s1 == s2
+    }
+}
+
+case class LocalUnion( name : String, first : Relation, second : Relation ) extends Relation {
+  override def scan(): Iterator[Predicate] = first.scan() ++ second.scan()
 }
 
 case class LocalJoin( name : String,
-                      joinCondition : (Literal, Literal) => Boolean,
+                      joinCondition : (Predicate, Predicate) => Boolean,
                       left : Relation,
                       right : Relation) extends Relation {
 
-  override def scan(): Iterator[Literal] =
+  override def scan(): Iterator[Predicate] =
     left.scan().flatMap {
-      case leftPred : Literal =>
+      case leftPred : Predicate =>
         right.scan().filter( rightPred => joinCondition(leftPred, rightPred) )
     }
 }
@@ -58,7 +77,7 @@ case class FromFile( name : String, file : File ) extends Relation {
 
   override def scan() : Iterator[Literal] = {
     val lines = Source.fromFile(file, "UTF-8").getLines()
-    lines.map(lineToPredicate).toIterable
+    lines.map(lineToPredicate)
   }
 
   def lineToPredicate( line : String ) : Predicate = {

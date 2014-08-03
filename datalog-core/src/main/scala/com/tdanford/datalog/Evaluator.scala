@@ -15,18 +15,15 @@
  */
 package com.tdanford.datalog
 
-import java.io.File
+trait Evaluator {
+  def eval( query : Rule, ruleset : RuleSet, relations : Seq[Relation] ) : Relation
+}
 
-import org.scalatest.FunSuite
+class BottomUpEvaluator extends Evaluator {
+  override def eval(query: Rule, ruleset: RuleSet, relations: Seq[Relation]): Relation = {
 
-class FileRelationSuite extends FunSuite {
 
-  test("correctly reads test_relation.txt") {
-    val file = Thread.currentThread().getContextClassLoader.getResource("test_relation.txt").getFile
-    val preds : Seq[Predicate] = FromFile("P", new File(file)).scan().toSeq
-
-    assert( preds.size === 2 )
-    assert( preds(0) === Predicate("P", Seq(Value("a"), Value("b"), Value("c"))) )
-    assert( preds(1) === Predicate("P", Seq(Value("d"), Value("e"), Value("f"))) )
   }
 }
+
+
