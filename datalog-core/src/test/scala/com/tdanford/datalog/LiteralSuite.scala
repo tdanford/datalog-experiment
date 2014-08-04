@@ -15,18 +15,19 @@
  */
 package com.tdanford.datalog
 
-import java.io.File
-
 import org.scalatest.FunSuite
 
-class FileRelationSuite extends FunSuite {
+class LiteralSuite extends FunSuite {
 
-  test("correctly reads test_relation.txt") {
-    val file = Thread.currentThread().getContextClassLoader.getResource("test_relation.txt").getFile
-    val preds : Seq[Literal] = FromFile("P", new File(file)).scan().toSeq
-
-    assert( preds.size === 2 )
-    assert( preds(0) === Literal("P", Seq(Constant("a"), Constant("b"), Constant("c"))) )
-    assert( preds(1) === Literal("P", Seq(Constant("d"), Constant("e"), Constant("f"))) )
+  test("equality between Literals holds in the correct way") {
+    assert( Literal("foo", Seq(Var("a"), Constant("b"))) === Literal("foo", Seq(Var("a"), Constant("b"))) )
   }
+
+  test("isGround is determined correctly") {
+    assert(!Literal("foo", Seq(Var("a"), Constant("b"))).isGround )
+    assert(Literal("foo", Seq(Constant("a"), Constant("b"))).isGround )
+    assert(Literal("foo", Seq(Func("f", Seq(Constant("a"))), Constant("b"))).isGround )
+    assert(!Literal("foo", Seq(Func("f", Seq(Var("a"))), Constant("b"))).isGround )
+  }
+
 }

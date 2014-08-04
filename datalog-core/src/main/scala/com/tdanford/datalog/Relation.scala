@@ -21,36 +21,36 @@ import scala.io.Source
 
 trait Relation {
   def name : String
-  def scan() : Iterator[Predicate]
+  def scan() : Iterator[Literal]
 }
 
-object PredicateConditions {
+object LiteralConditions {
 
-  def predicateSubset( predicate : Predicate, indices : Int* ) : Seq[Atom] =
-    predicate.tuple.zipWithIndex.filter {
-      case (a : Atom, i : Int) => indices.contains(i)
+  def predicateSubset( predicate : Literal, indices : Int* ) : Seq[Term] =
+    predicate.terms.zipWithIndex.filter {
+      case (a : Term, i : Int) => indices.contains(i)
     }.map(_._1)
 
-  def pointEquality( indices : Int* ) : (Predicate,Predicate)=>Boolean =
+  def pointEquality( indices : Int* ) : (Literal,Literal)=>Boolean =
     (p1, p2) => {
-      val s1: Seq[Atom] = predicateSubset(p1, indices : _*)
-      val s2: Seq[Atom] = predicateSubset(p2, indices : _*)
+      val s1: Seq[Term] = predicateSubset(p1, indices : _*)
+      val s2: Seq[Term] = predicateSubset(p2, indices : _*)
       s1 == s2
     }
 }
 
 case class LocalUnion( name : String, first : Relation, second : Relation ) extends Relation {
-  override def scan(): Iterator[Predicate] = first.scan() ++ second.scan()
+  override def scan(): Iterator[Literal] = first.scan() ++ second.scan()
 }
 
 case class LocalJoin( name : String,
-                      joinCondition : (Predicate, Predicate) => Boolean,
+                      joinCondition : (Literal, Literal) => Boolean,
                       left : Relation,
                       right : Relation) extends Relation {
 
-  override def scan(): Iterator[Predicate] =
+  override def scan(): Iterator[Literal] =
     left.scan().flatMap {
-      case leftPred : Predicate =>
+      case leftPred : Literal =>
         right.scan().filter( rightPred => joinCondition(leftPred, rightPred) )
     }
 }
@@ -77,11 +77,8 @@ case class FromFile( name : String, file : File ) extends Relation {
 
   override def scan() : Iterator[Literal] = {
     val lines = Source.fromFile(file, "UTF-8").getLines()
-    lines.map(lineToPredicate)
+    lines.map(lineToLiteral)
   }
 
-  def lineToPredicate( line : String ) : Predicate = {
-    val array = line.split("\t")
-    Predicate(name, array.map(str => Value(str)))
-  }
+  def lineToLiteral( line : String ) : Literal = fact(name, line.split("\t") : _*)
 }

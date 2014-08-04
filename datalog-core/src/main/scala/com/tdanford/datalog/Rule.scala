@@ -18,31 +18,41 @@ package com.tdanford.datalog
 class RuleSet( rules : Seq[Rule] ) {
 }
 
-
-case class Rule( head : Predicate, body : Seq[Literal] ) {
+case class Rule( head : Literal, body : Seq[Literal] ) {
+  require( !head.negated, "Head literal in a Rule cannot be negated" )
   override def toString : String = "%s :- %s".format(head.toString, body.map(_.toString).mkString(",\n"))
 }
 
-case class Literal(relation : Predicate, negated : Boolean = false) {
-  override def toString: String =
-    if(negated) "!%s".format(relation.toString) else relation.toString
+case class Literal(predicate : String, terms : Seq[Term], negated : Boolean = false) {
+  override def toString: String = {
+    val pstr = "%s(%s)".format(predicate, terms.map(_.toString).mkString(","))
+    if(negated) "!%s".format(pstr) else pstr
+  }
+
+  def isGround : Boolean = terms.forall(_.isGround)
 }
 
-trait Atom {
+object Literal {
+  def fact(predicate : String, values : String*) : Literal =
+    Literal(predicate, values.map(str => Constant(str)))
 }
 
-case class Var( name : String ) extends Atom {
+trait Term {
+  def isGround : Boolean
+}
+
+case class Var( name : String ) extends Term {
   override def toString: String = name
+  def isGround : Boolean = false
 }
 
-case class Value( value : String ) extends Atom {
+case class Constant( value : String ) extends Term {
+  def isGround : Boolean = true
   override def toString: String = value
 }
 
-case class Func( fname : String, args : Seq[Atom] ) extends Atom {
+case class Func( fname : String, args : Seq[Term] ) extends Term {
+  def isGround : Boolean = args.forall(_.isGround)
   override def toString : String = "%s(%s)".format(fname, args.map(_.toString).mkString(","))
 }
 
-case class Predicate( name : String, tuple : Seq[Atom] ) {
-  override def toString : String = "%s(%s)".format(name, tuple.map(_.toString).mkString(","))
-}
