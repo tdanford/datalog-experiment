@@ -19,6 +19,10 @@ import java.io._
 
 import scala.io.Source
 
+class RelationSet(rels : Seq[Relation]) {
+  val relations : Map[String,Relation] = rels.map(rel => (rel.name, rel)).toMap
+}
+
 trait Relation {
   def name : String
   def scan() : Iterator[Literal]

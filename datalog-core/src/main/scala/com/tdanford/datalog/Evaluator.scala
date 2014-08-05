@@ -16,11 +16,13 @@
 package com.tdanford.datalog
 
 trait Evaluator {
-  def eval( query : Rule, ruleset : RuleSet, relations : Seq[Relation] ) : Relation
+  def eval( query : Rule, ruleset : RuleSet, facts : RelationSet) : Relation
 }
 
 class BottomUpEvaluator extends Evaluator {
-  override def eval(query: Rule, ruleset: RuleSet, relations: Seq[Relation]): Relation = ???
+  override def eval(query: Rule, ruleset: RuleSet, facts: RelationSet): Relation = {
+    ???
+  }
 }
 
 
