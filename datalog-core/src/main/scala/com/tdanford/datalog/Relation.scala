@@ -24,8 +24,39 @@ trait Relation {
   def scan() : Iterable[Predicate]
 }
 
-class FileRelation( val name : String, val file : File ) extends Relation {
-  override def scan() : Iterable[Predicate] = {
+case class LocalJoin( name : String,
+                      joinCondition : (Literal, Literal) => Boolean,
+                      left : Relation,
+                      right : Relation) extends Relation {
+
+  override def scan(): Iterator[Literal] =
+    left.scan().flatMap {
+      case leftPred : Literal =>
+        right.scan().filter( rightPred => joinCondition(leftPred, rightPred) )
+    }
+}
+
+object TreeUtils {
+  def buildLiteralTree( literals : Seq[Literal] ) : Tree[Term] =
+    Root[Term]().insertAll(literals.map(_.terms) : _*)
+}
+
+case class InMemory( name : String, values : Seq[Literal] ) extends Relation {
+
+  private lazy val index : Tree[Term] = TreeUtils.buildLiteralTree(values)
+
+  def this( rel : Relation ) = this( rel.name, rel.scan().toSeq )
+
+  def ++(mem : InMemory) : InMemory = InMemory(name, Set(values ++ mem.values : _*).toSeq)
+
+  override def scan(): Iterator[Literal] = values.iterator
+}
+
+case class FromFile( name : String, file : File ) extends Relation {
+
+  import Literal._
+
+  override def scan() : Iterator[Literal] = {
     val lines = Source.fromFile(file, "UTF-8").getLines()
     lines.map(lineToPredicate).toIterable
   }
